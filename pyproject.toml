@@ -1,0 +1,21 @@
+[project]
+name = "pdf-manager"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "Mauro Regli",email = "Qurium@protonmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+]
+
+[tool.poetry]
+packages = [{include = "pdf_manager", from = "src"}]
+
+[tool.poetry.scripts]
+pdf-manager = "pdf_manager.__main__:main"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
