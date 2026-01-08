@@ -1,6 +1,6 @@
 [project]
 name = "pdf-manager-gui"
-version = "0.2.0"
+version = "0.3.0"
 description = "Visually compress and OCR PDF files."
 authors = [
     {name = "Ioasjfopas",email = "Qurium@protonmail.com"}
