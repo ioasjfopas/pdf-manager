@@ -120,12 +120,19 @@ class DropView(QWidget):
         file_paths = [Path(f) for f in file_urls]
 
         # allow only PDF files
-        newly_selected_files = [
+        new_files = [
             f
             for f in file_paths
             if f.exists() and (f.is_file() and f.suffix.lower() == ".pdf")
         ]
-        self.selected_files = list(set(self.selected_files + newly_selected_files))
+
+        # or nested PDF files
+        folders = [f for f in file_paths if f.exists() and f.is_dir()]
+        for folder in folders:
+            for f in folder.rglob("*.pdf"):
+                new_files.append(f)
+
+        self.selected_files = list(set(self.selected_files + new_files))
         self.update_files_label()
 
     def clear_files(self):
