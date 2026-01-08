@@ -20,7 +20,8 @@ brew install ghostscript
 
 Install from [here](https://ghostscript.com/releases/gsdnld.html).
 
-> Important: Make sure that `gs` is in the `PATH` and available.
+> [!IMPORTANT]  
+> Make sure that `gs` is in the `PATH` and available.
 
 ## Install:
 
@@ -31,5 +32,5 @@ pip install pdf-manager-gui
 or, even better, use [PipX](https://pipx.pypa.io/latest/)
 
 ```sh
-pip install pdf-manager-gui
+pipx install pdf-manager-gui
 ```
