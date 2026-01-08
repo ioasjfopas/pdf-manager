@@ -1,9 +1,9 @@
 [project]
 name = "pdf-manager"
 version = "0.1.0"
-description = ""
+description = "Visually compress and OCR PDF files."
 authors = [
-    {name = "Mauro Regli",email = "Qurium@protonmail.com"}
+    {name = "Ioasjfopas",email = "Qurium@protonmail.com"}
 ]
 readme = "README.md"
 requires-python = ">=3.12"
@@ -11,6 +11,16 @@ dependencies = [
     "pyqt6 (>=6.10.0,<7.0.0)",
     "ocrmypdf (>=16.12.0,<17.0.0)",
 ]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+license = "GPL-3.0-or-later"
+license-files = ["LICEN[CS]E*"]
+
+[project.urls]
+Homepage = "https://github.com/ioasjfopas/pdf-manager"
+Issues = "https://github.com/ioasjfopas/pdf-manager/issues"
 
 [tool.poetry]
 packages = [{include = "pdf_manager", from = "src"}]
