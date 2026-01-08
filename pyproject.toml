@@ -18,6 +18,9 @@ packages = [{include = "pdf_manager", from = "src"}]
 [tool.poetry.scripts]
 pdf-manager = "pdf_manager.__main__:main"
 
+[tool.poetry.group.dev.dependencies]
+black = "^25.12.0"
+
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"

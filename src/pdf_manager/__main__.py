@@ -9,22 +9,24 @@ from multiprocessing import Process
 from PyQt6.QtWidgets import QApplication, QMainWindow, QLabel, QPushButton
 from PyQt6.QtCore import QTimer
 
+
 def run_ocr(input_file: Path, output_file: Path) -> None:
     ocrmypdf.ocr(
         input_file=str(input_file),
         output_file=str(output_file),
-        language='deu',
+        language="deu",
         rotate_pages=True,
         deskew=True,
-        output_type='pdf',
-        force_ocr=True
+        output_type="pdf",
+        force_ocr=True,
     )
+
 
 def convert_and_compress_pdf(file: Path) -> bool:
     file = file.resolve()
     ocr_file = file.with_name(f"{file.stem}_ocr{file.suffix}")
     compressed_file = file.with_name(f"{file.stem}_compressed{file.suffix}")
-    
+
     GS_OPTIONS = "-sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/default -dNOPAUSE -dBATCH -dDetectDuplicateImages -dCompressFonts=true -r300"
 
     try:
@@ -36,7 +38,9 @@ def convert_and_compress_pdf(file: Path) -> bool:
         return False
 
     try:
-        cmd = shlex.split(f"gs {GS_OPTIONS} -sOutputFile='{compressed_file}' '{ocr_file}'")
+        cmd = shlex.split(
+            f"gs {GS_OPTIONS} -sOutputFile='{compressed_file}' '{ocr_file}'"
+        )
         subprocess.run(cmd, check=True)
     except Exception as e:
         compressed_file.unlink(missing_ok=True)
@@ -48,20 +52,23 @@ def convert_and_compress_pdf(file: Path) -> bool:
     print(f"Converted: {file}")
     return True
 
+
 class MainWindow(QMainWindow):
     selected_files: list[str] = []
 
     def __init__(self):
         super().__init__()
         self.setWindowTitle("PDF Manager")
-        self.resize(720,480)
-        
+        self.resize(720, 480)
+
         # Central text with 1px dotted border to indicate drop area
         label = QLabel("Drop PDF files here", self)
-        label.setStyleSheet("""
+        label.setStyleSheet(
+            """
             font-size: 24px;
             qproperty-alignment: 'AlignCenter';
-        """)
+        """
+        )
         self.setCentralWidget(label)
 
         convert_button = QPushButton("Convert", self)
@@ -80,16 +87,17 @@ class MainWindow(QMainWindow):
     def dropEvent(self, event):
         files = [u.toLocalFile() for u in event.mimeData().urls()]
         self.selected_files.extend(files)
-    
+
     def convert_pdfs(self):
         for file in self.selected_files:
             convert_and_compress_pdf(Path(file))
 
         self.selected_files.clear()
 
+
 def main() -> None:
     # quit on Ctrl-C
-    signal.signal(signal.SIGINT, lambda sig,_: app.quit())
+    signal.signal(signal.SIGINT, lambda sig, _: app.quit())
 
     app = QApplication(sys.argv)
 
