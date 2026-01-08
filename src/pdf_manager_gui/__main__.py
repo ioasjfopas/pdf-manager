@@ -64,7 +64,8 @@ class PDF(QRunnable):
             p.join()
         except Exception as e:
             print(f"Error converting {self.file}: {e}")
-            return False
+            self.signals.finished.emit(self.file, False)
+            return
 
         try:
             cmd = shlex.split(
@@ -74,7 +75,8 @@ class PDF(QRunnable):
         except Exception as e:
             compressed_file.unlink(missing_ok=True)
             print(f"Error compressing {ocr_file}: {e}")
-            return False
+            self.signals.finished.emit(self.file, False)
+            return
 
         ocr_file.unlink(missing_ok=True)
         shutil.move(compressed_file, self.file)
@@ -174,8 +176,6 @@ class MainWindow(QMainWindow):
     def on_file_finished(self, file: Path, success: bool):
         if success:
             print(f"Finished processing {file}")
-        else:
-            print(f"Failed to process {file}")
 
         self.drop_view.selected_files.remove(file)
         self.drop_view.update_files_label()
