@@ -14,7 +14,15 @@ from PyQt6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-from PyQt6.QtCore import pyqtSignal, QTimer, Qt
+from PyQt6.QtCore import (
+    QTimer,
+    Qt,
+    QThreadPool,
+    QRunnable,
+    pyqtSlot,
+    pyqtSignal,
+    QObject,
+)
 
 
 def run_ocr(input_file: Path, output_file: Path) -> None:
@@ -29,40 +37,53 @@ def run_ocr(input_file: Path, output_file: Path) -> None:
     )
 
 
-def convert_and_compress_pdf(file: Path) -> bool:
-    file = file.resolve()
-    ocr_file = file.with_name(f"{file.stem}_ocr{file.suffix}")
-    compressed_file = file.with_name(f"{file.stem}_compressed{file.suffix}")
+class PDFResult(QObject):
+    finished = pyqtSignal([Path, bool])
 
-    GS_OPTIONS = "-sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/default -dNOPAUSE -dBATCH -dDetectDuplicateImages -dCompressFonts=true -r300"
 
-    try:
-        p = Process(target=run_ocr, args=(file, ocr_file))
-        p.start()
-        p.join()
-    except Exception as e:
-        print(f"Error converting {file}: {e}")
-        return False
+class PDF(QRunnable):
+    signals: PDFResult
 
-    try:
-        cmd = shlex.split(
-            f"gs {GS_OPTIONS} -sOutputFile='{compressed_file}' '{ocr_file}'"
+    def __init__(self, file: Path):
+        super().__init__()
+        self.file = file.resolve()
+        self.signals = PDFResult()
+
+    @pyqtSlot()
+    def run(self) -> None:
+        ocr_file = self.file.with_name(f"{self.file.stem}_ocr{self.file.suffix}")
+        compressed_file = self.file.with_name(
+            f"{self.file.stem}_compressed{self.file.suffix}"
         )
-        subprocess.run(cmd, check=True)
-    except Exception as e:
-        compressed_file.unlink(missing_ok=True)
-        print(f"Error compressing {ocr_file}: {e}")
-        return False
 
-    ocr_file.unlink(missing_ok=True)
-    shutil.move(compressed_file, file)
-    print(f"Converted: {file}")
-    return True
+        GS_OPTIONS = "-sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/default -dNOPAUSE -dBATCH -dDetectDuplicateImages -dCompressFonts=true -r300"
+
+        try:
+            p = Process(target=run_ocr, args=(self.file, ocr_file))
+            p.start()
+            p.join()
+        except Exception as e:
+            print(f"Error converting {self.file}: {e}")
+            return False
+
+        try:
+            cmd = shlex.split(
+                f"gs {GS_OPTIONS} -sOutputFile='{compressed_file}' '{ocr_file}'"
+            )
+            subprocess.run(cmd, check=True)
+        except Exception as e:
+            compressed_file.unlink(missing_ok=True)
+            print(f"Error compressing {ocr_file}: {e}")
+            return False
+
+        ocr_file.unlink(missing_ok=True)
+        shutil.move(compressed_file, self.file)
+        self.signals.finished.emit(self.file, True)
 
 
 class DropView(QWidget):
     selected_files: list[Path] = []
-    files_changed = pyqtSignal([list])
+    NO_FILES_TEXT = "Drag and drop files here to convert"
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -73,13 +94,12 @@ class DropView(QWidget):
             """
             QWidget {
                 border: 2px dashed white;
-                background-color: #444444;
                 border-radius: 10px;
             }
             """
         )
 
-        self.label = QLabel("Drag and drop files here to convert", self)
+        self.label = QLabel(self.NO_FILES_TEXT, self)
         self.label.setAlignment(
             Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter
         )
@@ -93,19 +113,6 @@ class DropView(QWidget):
         else:
             event.ignore()
 
-    def update_files_label(self):
-        if not self.selected_files:
-            self.label.setText("Drag and drop files here to convert")
-            return
-
-        self.label.setText(
-            f"""Drag and drop files here to convert
-Selected files: 
-
-
-{"\n".join(f.name for f in self.selected_files)}"""
-        )
-
     def dropEvent(self, event):
         file_urls = [url.toLocalFile() for url in event.mimeData().urls()]
         file_paths = [Path(f) for f in file_urls]
@@ -118,29 +125,43 @@ Selected files:
         ]
         self.selected_files = list(set(self.selected_files + newly_selected_files))
         self.update_files_label()
-        self.files_changed.emit(self.selected_files)
+
+    def clear_files(self):
+        self.selected_files = []
+        self.update_files_label()
+
+    def update_files_label(self):
+        if not self.selected_files:
+            self.label.setText(self.NO_FILES_TEXT)
+            return
+
+        file_names = "\n".join(f.name for f in self.selected_files)
+        self.label.setText(
+            f"Drag and drop files here to convert\nSelected files:\n\n{file_names}"
+        )
 
 
 class MainWindow(QMainWindow):
-    selected_files: list[Path] = []
     is_compressing: bool = False
+    pool: QThreadPool
 
     def __init__(self):
         super().__init__()
+        self.pool = QThreadPool()
+
         self.setWindowTitle("PDF Manager")
         self.resize(720, 480)
 
         layout = QVBoxLayout()
 
         self.drop_view = DropView(self)
-        self.drop_view.files_changed.connect(self.on_files_changed)
         layout.addWidget(self.drop_view)
 
-        self.clear_button = QPushButton("Clear Files")
-        self.clear_button.clicked.connect(self.clear_files)
+        self.clear_button = QPushButton("Clear Files", self)
+        self.clear_button.clicked.connect(self.drop_view.clear_files)
         layout.addWidget(self.clear_button)
 
-        self.convert_button = QPushButton("Convert and Compress PDFs")
+        self.convert_button = QPushButton("Convert and Compress PDFs", self)
         self.convert_button.clicked.connect(self.convert_pdfs)
         layout.addWidget(self.convert_button)
 
@@ -150,31 +171,34 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(widget)
         self.show()
 
+    def on_file_finished(self, file: Path, success: bool):
+        if success:
+            print(f"Finished processing {file}")
+        else:
+            print(f"Failed to process {file}")
+
+        self.drop_view.selected_files.remove(file)
+        self.drop_view.update_files_label()
+        if not self.drop_view.selected_files:
+            self.set_is_compressing(False)
+
     def set_is_compressing(self, value: bool):
         self.is_compressing = value
-        self.convert_button.setEnabled(not value)
-        self.convert_button.setText(
-            "Converting..." if value else "Convert and Compress PDFs"
-        )
-
-    def clear_files(self):
-        self.selected_files.clear()
-        self.drop_view.label.setText("Drag and drop files here to convert")
-
-    def on_files_changed(self, files: list[Path]):
-        self.selected_files = files
+        if value:
+            self.convert_button.setText("Converting...")
+        else:
+            self.convert_button.setText("Convert and Compress PDFs")
 
     def convert_pdfs(self):
-        if self.is_compressing or not self.selected_files:
+        if self.is_compressing or not self.drop_view.selected_files:
             return
 
         self.set_is_compressing(True)
 
-        for file in self.selected_files:
-            convert_and_compress_pdf(file)
-
-        self.set_is_compressing(False)
-        self.clear_files()
+        for file in self.drop_view.selected_files:
+            pdf = PDF(file)
+            pdf.signals.finished.connect(self.on_file_finished)
+            self.pool.start(pdf)
 
 
 def main() -> None:
