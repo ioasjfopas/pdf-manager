@@ -34,6 +34,7 @@ def run_ocr(input_file: Path, output_file: Path) -> None:
         deskew=True,
         output_type="pdf",
         force_ocr=True,
+        progress_bar=False,
     )
 
 
@@ -51,12 +52,13 @@ class PDF(QRunnable):
 
     @pyqtSlot()
     def run(self) -> None:
+        print(f"Processing {self.file}...")
         ocr_file = self.file.with_name(f"{self.file.stem}_ocr{self.file.suffix}")
         compressed_file = self.file.with_name(
             f"{self.file.stem}_compressed{self.file.suffix}"
         )
 
-        GS_OPTIONS = "-sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/default -dNOPAUSE -dBATCH -dDetectDuplicateImages -dCompressFonts=true -r300"
+        GS_OPTIONS = "-sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/default -dNOPAUSE -dQUIET -dBATCH -dDetectDuplicateImages -dCompressFonts=true -r300"
 
         try:
             p = Process(target=run_ocr, args=(self.file, ocr_file))
