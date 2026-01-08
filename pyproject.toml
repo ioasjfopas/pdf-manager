@@ -1,5 +1,5 @@
 [project]
-name = "pdf-manager"
+name = "pdf-manager-gui"
 version = "0.1.0"
 description = "Visually compress and OCR PDF files."
 authors = [
@@ -23,10 +23,10 @@ Homepage = "https://github.com/ioasjfopas/pdf-manager"
 Issues = "https://github.com/ioasjfopas/pdf-manager/issues"
 
 [tool.poetry]
-packages = [{include = "pdf_manager", from = "src"}]
+packages = [{include = "pdf_manager_gui", from = "src"}]
 
 [tool.poetry.scripts]
-pdf-manager = "pdf_manager.__main__:main"
+pdf-manager-gui = "pdf_manager_gui.__main__:main"
 
 [tool.poetry.group.dev.dependencies]
 black = "^25.12.0"

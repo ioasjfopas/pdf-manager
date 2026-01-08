@@ -193,5 +193,6 @@ def main() -> None:
     ui.show()
     sys.exit(app.exec())
 
+
 if __name__ == "__main__":
     main()

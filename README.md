@@ -1,6 +1,6 @@
-# PDF-Manager
+# PDF-Manager-GUI
 
-![Tony Stark Designing](https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExMTZlcXdwaGIzNXE3MTdubnZmenVlamFoMm1qaTk3bXR0ZWV1cWx4dCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/hHxTQkcjmHUTC/giphy.gif "Tony Stark")
+<image src="PDF-Manager-GUI.png" width="500">
 
 A simple tool that allows you to run [OCRmyPDF](https://github.com/ocrmypdf/OCRmyPDF) and [GhostScript](https://www.ghostscript.com/) on PDFs visually.
 
